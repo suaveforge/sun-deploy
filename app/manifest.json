@@ -1,0 +1,12 @@
+{
+  "name": "선 SUN",
+  "short_name": "선",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFFCFA",
+  "theme_color": "#9D4F68",
+  "description": "검증된 사람을 사람이 소개하는 맞선 서비스",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": []
+}
