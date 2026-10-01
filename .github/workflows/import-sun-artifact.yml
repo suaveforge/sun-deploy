@@ -1,0 +1,50 @@
+name: Import SUN Web Artifact
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-sun-artifact.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download validated SUN web artifact
+        env:
+          ARTIFACT_URL: 'https://sdmntprjapaneast.oaiusercontent.com/files/00000000-d21c-8209-b415-25a31cb9b9c5/raw?se=2026-10-01T18%3A46%3A08Z&sp=r&sv=2026-02-06&sr=b&scid=85727373-a246-52e8-81f3-b7c469cbf2e7&skoid=b1bca990-dcac-4c31-8ca1-ac563cf24c54&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-01T18%3A16%3A33Z&ske=2026-10-02T18%3A16%3A33Z&sks=b&skv=2026-02-06&sig=Y2uWUbL%2B7AsFwMNpFjQ%2B45S3vfJOCHAfZnfPdvH5SV8%3D'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl -fL --retry 3 --retry-delay 2 "$ARTIFACT_URL" -o /tmp/sun-public-web.zip
+          test -s /tmp/sun-public-web.zip
+          unzip -t /tmp/sun-public-web.zip >/dev/null
+          rm -rf /tmp/sun-public-web
+          mkdir -p /tmp/sun-public-web
+          unzip -q /tmp/sun-public-web.zip -d /tmp/sun-public-web
+          test -f /tmp/sun-public-web/index.html
+          test -f /tmp/sun-public-web/app/index.html
+          test -f /tmp/sun-public-web/admin/index.html
+          test "$(cat /tmp/sun-public-web/CNAME)" = "sun.suaveforge.com"
+
+      - name: Replace public deploy tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
+          cp -a /tmp/sun-public-web/. .
+          rm -f .github/workflows/import-sun-artifact.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy validated SUN web artifact"
+          git push origin HEAD:main
