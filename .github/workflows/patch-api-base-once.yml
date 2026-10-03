@@ -1,0 +1,61 @@
+name: SUN patch high-port API base once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-api-base-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch deployed API base
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          old='https://api-sun.suaveforge.com'
+          new='https://api-sun.suaveforge.com:19105'
+          files=$(grep -rl --exclude-dir=.git --exclude='patch-api-base-once.yml' "$old" app admin . 2>/dev/null | sort -u || true)
+          if [ -n "$files" ]; then
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              perl -0pi -e 's#https://api-sun\.suaveforge\.com(?!:19105)#https://api-sun.suaveforge.com:19105#g' "$f"
+            done <<< "$files"
+          fi
+          if grep -R --exclude-dir=.git --exclude='patch-api-base-once.yml' -n 'https://api-sun\.suaveforge\.com[^:]' app admin . >/tmp/sun-old-api-base.txt 2>/dev/null; then
+            cat /tmp/sun-old-api-base.txt
+            exit 41
+          fi
+          grep -R --exclude-dir=.git --exclude='patch-api-base-once.yml' -l 'https://api-sun\.suaveforge\.com:19105' app admin . >/tmp/sun-new-api-files.txt 2>/dev/null || true
+          test -s /tmp/sun-new-api-files.txt
+          echo "SUN_DEPLOY_HIGH_PORT_FILES=$(wc -l < /tmp/sun-new-api-files.txt | tr -d ' ')"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Point SUN web to high-port API 19105"
+            git push origin HEAD:main
+          fi
+
+      - name: Remove one-time workflow
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main --quiet
+          git checkout -B main origin/main
+          if [ -f .github/workflows/patch-api-base-once.yml ]; then
+            git rm .github/workflows/patch-api-base-once.yml
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Remove one-time SUN API base patcher"
+            git push origin HEAD:main
+          fi
