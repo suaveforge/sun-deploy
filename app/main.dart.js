@@ -36701,27 +36701,28 @@ return A.n($async$b9k,r)},
 bjx(a,b,c){if(!c||!b)return"/profile/setup"
 if(!a)return"/photos/upload?returnTo=startup"
 return"/today"},
-bBO(){var s,r,q,p,o,n,m,l,k=null,j="accessToken",i="refreshToken",h=v.G.window.sessionStorage,g=h.getItem("sunWebSessionHandoff")
-if(g==null||g.length===0)return k
+bBO(){var s,r,q,p,o,n,m,l=null,k="accessToken",j="refreshToken",i=v.G,h=i.window.sessionStorage,g=i.window.localStorage,f=h.getItem("sunWebSessionHandoff"),e=f==null?g.getItem("sunWebSessionHandoff"):f
+if(e==null||e.length===0)return l
 h.removeItem("sunWebSessionHandoff")
-try{s=B.bh.Hz(0,g,k)
-if(!t.f.b(s))return k
-m=J.a1(s,j)
-r=m==null?k:J.T(m)
-m=J.a1(s,i)
-q=m==null?k:J.T(m)
-m=J.a1(s,"userId")
-p=m==null?k:J.T(m)
-m=J.a1(s,"role")
-o=m==null?k:J.T(m)
-if(r==null||r.length===0||q==null||q.length===0||p==null||p.length===0)return k
-m=t.N
-n=A.z(m,m)
-J.ce(n,j,r)
-J.ce(n,i,q)
+g.removeItem("sunWebSessionHandoff")
+try{s=B.bh.Hz(0,e,l)
+if(!t.f.b(s))return l
+i=J.a1(s,k)
+r=i==null?l:J.T(i)
+i=J.a1(s,j)
+q=i==null?l:J.T(i)
+i=J.a1(s,"userId")
+p=i==null?l:J.T(i)
+i=J.a1(s,"role")
+o=i==null?l:J.T(i)
+if(r==null||r.length===0||q==null||q.length===0||p==null||p.length===0)return l
+i=t.N
+n=A.z(i,i)
+J.ce(n,k,r)
+J.ce(n,j,q)
 J.ce(n,"userId",p)
 if(o!=null&&o.length!==0)J.ce(n,"role",o)
-return n}catch(l){return k}},
+return n}catch(m){return l}},
 bzL(a){switch(a.a){case 0:return B.nY
 case 2:return B.Dw
 case 1:return B.Dv
@@ -36940,7 +36941,7 @@ $S:3}
 A.b2k.prototype={
 $1(a){var s=A.ek().b
 s=s==null?null:s.canvasKitBaseUrl
-return(s==null?"https://www.gstatic.com/flutter-canvaskit/af7e796e161ae0bb1ff0758c71a7105418bd9ded/":s)+a},
+return(s==null?"https://www.gstatic.com/flutter-canvaskit/692136cb6582dbfc5af3fb33c2515a069f2f66d0/":s)+a},
 $S:41}
 A.YE.prototype={
 gv(a){var s=this.a
@@ -119292,8 +119293,8 @@ case 1:return A.m(q,r)}})
 return A.n($async$ox,r)}}
 A.fX.prototype={}
 A.nx.prototype={
-eA(a4){var s=0,r=A.o(t.H),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3
-var $async$eA=A.p(function(a5,a6){if(a5===1){o.push(a6)
+eA(a5){var s=0,r=A.o(t.H),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4
+var $async$eA=A.p(function(a6,a7){if(a6===1){o.push(a7)
 s=p}for(;;)switch(s){case 0:p=4
 m=A.bBO()
 s=m!=null?7:8
@@ -119307,58 +119308,68 @@ s=l!=null&&k!=null&&j!=null?9:10
 break
 case 9:$.d0().xR(l)
 n.spA(0,new A.fX(l,k,j,i,!0))
-s=11
+p=12
+s=15
 return A.i(B.b7.ia(0,"accessToken",l),$async$eA)
-case 11:s=12
+case 15:s=16
 return A.i(B.b7.ia(0,"refreshToken",k),$async$eA)
-case 12:s=13
+case 16:s=17
 return A.i(B.b7.ia(0,"userId",j),$async$eA)
-case 13:s=i!=null?14:15
+case 17:s=i!=null?18:19
 break
-case 14:s=16
+case 18:s=20
 return A.i(B.b7.ia(0,"role",i),$async$eA)
-case 16:case 15:s=17
+case 20:case 19:s=21
 return A.i(B.b7.ia(0,"sessionSchemaVersion","2"),$async$eA)
-case 17:s=1
+case 21:p=4
+s=14
 break
-case 10:case 8:s=18
-return A.i($.aff().r0(B.b7.Fx(null,null,null,null,null,null)),$async$eA)
-case 18:h=a6
-s=J.a1(h,"sessionSchemaVersion")!=="2"?19:20
-break
-case 19:p=22
-s=25
-return A.i(A.b6D(B.at).DL($.afg().grA()),$async$eA)
-case 25:p=4
-s=24
-break
-case 22:p=21
+case 12:p=11
 a1=o.pop()
-s=24
+s=14
 break
-case 21:s=4
+case 11:s=4
 break
-case 24:p=27
+case 14:s=1
+break
+case 10:case 8:s=22
+return A.i($.aff().r0(B.b7.Fx(null,null,null,null,null,null)),$async$eA)
+case 22:h=a7
+s=J.a1(h,"sessionSchemaVersion")!=="2"?23:24
+break
+case 23:p=26
+s=29
+return A.i(A.b6D(B.at).DL($.afg().grA()),$async$eA)
+case 29:p=4
+s=28
+break
+case 26:p=25
+a2=o.pop()
+s=28
+break
+case 25:s=4
+break
+case 28:p=31
 a=$.fq
 a0=(a==null?$.fq=$.mE():a).l3("[DEFAULT]")
 A.dG(a0,$.lv(),!0)
-s=30
+s=34
 return A.i(A.amW(new A.iu(a0)).cm(),$async$eA)
-case 30:p=4
-s=29
+case 34:p=4
+s=33
 break
-case 27:p=26
-a2=o.pop()
-s=29
+case 31:p=30
+a3=o.pop()
+s=33
 break
-case 26:s=4
+case 30:s=4
 break
-case 29:s=31
+case 33:s=35
 return A.i(B.b7.w4(),$async$eA)
-case 31:n.spA(0,B.om)
+case 35:n.spA(0,B.om)
 s=1
 break
-case 20:g=J.a1(h,"accessToken")
+case 24:g=J.a1(h,"accessToken")
 f=J.a1(h,"refreshToken")
 e=J.a1(h,"userId")
 i=J.a1(h,"role")
@@ -119370,10 +119381,10 @@ break}p=2
 s=6
 break
 case 4:p=3
-a3=o.pop()
-s=32
+a4=o.pop()
+s=36
 return A.i(B.b7.w4(),$async$eA)
-case 32:s=6
+case 36:s=6
 break
 case 3:s=2
 break
@@ -126637,11 +126648,14 @@ return A.i(q.yl(),$async$xW)
 case 2:return A.m(null,r)}})
 return A.n($async$xW,r)},
 aqv(a){return B.lM},
-a5O(a){var s,r,q=this,p=q.a,o=p.a
-if(a.a>o.a)a=o
-s=q.aqv(a)
-r=q.a.a
-q.sq(0,p.aIi(s,a.a===r.a,a))},
+a5O(a){var s,r,q,p,o=this
+if(o.cx)return
+s=o.a
+r=s.a
+if(a.a>r.a)a=r
+q=o.aqv(a)
+p=o.a.a
+o.sq(0,s.aIi(q,a.a===p.a,a))},
 K(a,b){if(!this.cx)this.uQ(0,b)}}
 A.aHt.prototype={
 $1(a){var s,r,q=this.a
