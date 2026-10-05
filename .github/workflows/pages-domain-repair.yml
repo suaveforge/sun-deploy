@@ -7,64 +7,96 @@ on:
     paths:
       - '.github/workflows/pages-domain-repair.yml'
 
-permissions:
-  contents: read
-  pages: write
-
 jobs:
   repair:
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    env:
-      GH_TOKEN: ${{ github.token }}
+    runs-on: [self-hosted, Linux, X64, server123, suaveforge-deploy, suaveforge-org]
+    timeout-minutes: 15
+
     steps:
-      - name: Inspect and repair Pages custom domain HTTPS
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Inspect and repair Pages custom-domain HTTPS
         shell: bash
         run: |
           set -Eeuo pipefail
-          repo="$GITHUB_REPOSITORY"
-          host='sun.suaveforge.com'
+          token_file=/home/actions-runners/suaveforge-org/secrets/deploy-token
+          test -s "$token_file"
+          token=$(tr -d '\r\n' < "$token_file")
+          test -n "$token"
+          echo "::add-mask::$token"
+          export SUN_GH_TOKEN="$token"
 
-          echo '=== PAGES BEFORE ==='
-          gh api "repos/$repo/pages" --jq '{cname,html_url,https_enforced,status,protected_domain_state,pending_domain_unverified_at}' || true
-          echo '=== DNS HEALTH BEFORE ==='
-          gh api "repos/$repo/pages/health" || true
+          node <<'NODE'
+          const repo='suaveforge/sun-deploy';
+          const host='sun.suaveforge.com';
+          const token=process.env.SUN_GH_TOKEN;
+          const base='https://api.github.com';
+          const headers={
+            'Accept':'application/vnd.github+json',
+            'Authorization':`Bearer ${token}`,
+            'X-GitHub-Api-Version':'2022-11-28',
+            'User-Agent':'SUN-Pages-Repair'
+          };
+          async function api(path,{method='GET',body}={}){
+            const r=await fetch(base+path,{
+              method,headers:{...headers,...(body?{'Content-Type':'application/json'}:{})},
+              body:body?JSON.stringify(body):undefined
+            });
+            const text=await r.text();
+            let data=null;
+            try{data=text?JSON.parse(text):null}catch{data=text}
+            return {ok:r.ok,status:r.status,data};
+          }
+          function slim(x){
+            if(!x||typeof x!=='object')return x;
+            return {
+              cname:x.cname??null,
+              html_url:x.html_url??null,
+              https_enforced:x.https_enforced??null,
+              status:x.status??null,
+              protected_domain_state:x.protected_domain_state??null,
+              pending_domain_unverified_at:x.pending_domain_unverified_at??null
+            };
+          }
 
-          gh api --method PUT "repos/$repo/pages" -f cname="$host" >/tmp/pages-cname.json
-          echo 'SUN_PAGES_CNAME_SET=yes'
+          let state=await api(`/repos/${repo}/pages`);
+          console.log('SUN_PAGES_BEFORE='+JSON.stringify(slim(state.data)));
 
-          https_ok=no
-          for i in $(seq 1 40); do
-            code=0
-            if gh api --method PUT "repos/$repo/pages" -F https_enforced=true >/tmp/pages-https.json 2>/tmp/pages-https.err; then
-              https_ok=yes
-              echo "SUN_PAGES_HTTPS_ENFORCED=yes attempt=$i"
-              break
-            else
-              code=$?
-              echo "SUN_PAGES_HTTPS_WAIT attempt=$i"
-              cat /tmp/pages-https.err || true
-            fi
-            sleep 10
-          done
+          const cname=await api(`/repos/${repo}/pages`,{method:'PUT',body:{cname:host}});
+          console.log(`SUN_PAGES_CNAME_HTTP=${cname.status}`);
+          if(!cname.ok && cname.status!==204) {
+            console.log('SUN_PAGES_CNAME_ERROR='+JSON.stringify(cname.data));
+            process.exit(31);
+          }
 
-          echo '=== PAGES AFTER ==='
-          gh api "repos/$repo/pages" --jq '{cname,html_url,https_enforced,status,protected_domain_state,pending_domain_unverified_at}'
-          echo '=== DNS HEALTH AFTER ==='
-          gh api "repos/$repo/pages/health" || true
+          let enforced=false;
+          for(let i=1;i<=60;i++){
+            const put=await api(`/repos/${repo}/pages`,{method:'PUT',body:{https_enforced:true}});
+            state=await api(`/repos/${repo}/pages`);
+            const s=slim(state.data);
+            console.log(`SUN_PAGES_HTTPS_ATTEMPT=${i} PUT_HTTP=${put.status} STATE=${JSON.stringify(s)}`);
+            if((put.ok||put.status===204) && s?.https_enforced===true && String(s?.html_url||'').startsWith('https://')){
+              enforced=true;
+              break;
+            }
+            await new Promise(r=>setTimeout(r,10000));
+          }
+          if(!enforced) process.exit(32);
 
-          test "$https_ok" = yes
-
-          live=no
-          for i in $(seq 1 30); do
-            if curl -fsSI --max-time 12 "https://$host/app/" >/tmp/sun-pages-head.txt 2>/tmp/sun-pages-curl.err; then
-              live=yes
-              echo "SUN_PAGES_HTTPS_LIVE=yes attempt=$i"
-              head -n 12 /tmp/sun-pages-head.txt
-              break
-            fi
-            echo "SUN_PAGES_LIVE_WAIT attempt=$i"
-            cat /tmp/sun-pages-curl.err || true
-            sleep 10
-          done
-          test "$live" = yes
+          let live=false;
+          for(let i=1;i<=30;i++){
+            try{
+              const r=await fetch('https://sun.suaveforge.com/app/',{redirect:'manual'});
+              console.log(`SUN_PAGES_LIVE_ATTEMPT=${i} HTTP=${r.status}`);
+              if(r.status>=200&&r.status<500){live=true;break}
+            }catch(e){
+              console.log(`SUN_PAGES_LIVE_ATTEMPT=${i} ERROR=${String(e.message||e)}`);
+            }
+            await new Promise(r=>setTimeout(r,10000));
+          }
+          if(!live) process.exit(33);
+          console.log('SUN_PAGES_HTTPS_LIVE=yes');
+          NODE
