@@ -1,0 +1,70 @@
+name: SUN Pages domain repair
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages-domain-repair.yml'
+
+permissions:
+  contents: read
+  pages: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Inspect and repair Pages custom domain HTTPS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          repo="$GITHUB_REPOSITORY"
+          host='sun.suaveforge.com'
+
+          echo '=== PAGES BEFORE ==='
+          gh api "repos/$repo/pages" --jq '{cname,html_url,https_enforced,status,protected_domain_state,pending_domain_unverified_at}' || true
+          echo '=== DNS HEALTH BEFORE ==='
+          gh api "repos/$repo/pages/health" || true
+
+          gh api --method PUT "repos/$repo/pages" -f cname="$host" >/tmp/pages-cname.json
+          echo 'SUN_PAGES_CNAME_SET=yes'
+
+          https_ok=no
+          for i in $(seq 1 40); do
+            code=0
+            if gh api --method PUT "repos/$repo/pages" -F https_enforced=true >/tmp/pages-https.json 2>/tmp/pages-https.err; then
+              https_ok=yes
+              echo "SUN_PAGES_HTTPS_ENFORCED=yes attempt=$i"
+              break
+            else
+              code=$?
+              echo "SUN_PAGES_HTTPS_WAIT attempt=$i"
+              cat /tmp/pages-https.err || true
+            fi
+            sleep 10
+          done
+
+          echo '=== PAGES AFTER ==='
+          gh api "repos/$repo/pages" --jq '{cname,html_url,https_enforced,status,protected_domain_state,pending_domain_unverified_at}'
+          echo '=== DNS HEALTH AFTER ==='
+          gh api "repos/$repo/pages/health" || true
+
+          test "$https_ok" = yes
+
+          live=no
+          for i in $(seq 1 30); do
+            if curl -fsSI --max-time 12 "https://$host/app/" >/tmp/sun-pages-head.txt 2>/tmp/sun-pages-curl.err; then
+              live=yes
+              echo "SUN_PAGES_HTTPS_LIVE=yes attempt=$i"
+              head -n 12 /tmp/sun-pages-head.txt
+              break
+            fi
+            echo "SUN_PAGES_LIVE_WAIT attempt=$i"
+            cat /tmp/sun-pages-curl.err || true
+            sleep 10
+          done
+          test "$live" = yes
