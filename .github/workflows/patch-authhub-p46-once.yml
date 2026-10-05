@@ -1,0 +1,52 @@
+name: SUN patch AuthHub p46 once
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/patch-authhub-p46-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace stale AuthHub p43 with SUN p46
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          matches=$(grep -RIl --exclude-dir=.git --exclude='patch-authhub-p46-once.yml' 'p43' . || true)
+          test -n "$matches"
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            perl -0pi -e 's/p43/p46/g' "$f"
+          done <<< "$matches"
+          if grep -RIn --exclude-dir=.git --exclude='patch-authhub-p46-once.yml' 'p43' . >/tmp/stale.txt 2>/dev/null; then
+            cat /tmp/stale.txt
+            exit 41
+          fi
+          grep -RIl --exclude-dir=.git --exclude='patch-authhub-p46-once.yml' 'p46' . >/tmp/p46files.txt
+          test -s /tmp/p46files.txt
+          echo "SUN_WEB_AUTHHUB_P46_FILES=$(wc -l < /tmp/p46files.txt | tr -d ' ')"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Bind deployed SUN web to AuthHub p46"
+          git push origin HEAD:main
+
+      - name: Remove one-time patcher
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main --quiet
+          git checkout -B main origin/main
+          git rm .github/workflows/patch-authhub-p46-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove one-time SUN AuthHub patcher"
+          git push origin HEAD:main
