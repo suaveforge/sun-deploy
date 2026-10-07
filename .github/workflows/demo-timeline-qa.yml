@@ -19,6 +19,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg >/dev/null
           test -s demo/sun-investor-demo.webm
           rm -rf demo/qa
           mkdir -p demo/qa
