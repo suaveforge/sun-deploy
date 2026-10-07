@@ -24,7 +24,7 @@ jobs:
           test -s demo/sun-investor-demo.webm
           rm -rf demo/qa
           mkdir -p demo/qa
-          ffmpeg -hide_banner -loglevel error -i demo/sun-investor-demo.webm             -vf "fps=1/2,scale=225:400:force_original_aspect_ratio=decrease,pad=225:400:(ow-iw)/2:(oh-ih)/2"             -frames:v 40 -q:v 7 /tmp/seq-%02d.jpg
+          ffmpeg -hide_banner -loglevel error -i demo/sun-investor-demo.webm             -vf "fps=1/2,scale=225:400"             -frames:v 40 -q:v 7 /tmp/seq-%02d.jpg
           for f in /tmp/seq-*.jpg; do
             b="$(basename "$f" .jpg)"
             base64 -w0 "$f" > "demo/qa/$b.jpg.b64"
