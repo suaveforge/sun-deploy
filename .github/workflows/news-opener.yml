@@ -1,0 +1,40 @@
+name: Fetch SUN news opener
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.news-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official broadcaster clip
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install -q yt-dlp
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          rm -f /tmp/news.*
+          yt-dlp             -f "bv*[height<=720]+ba/b[height<=720]"             --merge-output-format mp4             -o "/tmp/news.%(ext)s"             "https://www.youtube.com/watch?v=BczpusdkhoI"
+          src="$(ls /tmp/news.* | head -1)"
+          test -s "$src"
+          mkdir -p demo
+          ffmpeg -hide_banner -loglevel error -y             -ss 0 -t 8 -i "$src"             -vf "scale=720:-2"             -c:v libx264 -preset medium -crf 24             -c:a aac -b:a 128k             -movflags +faststart             demo/news-opener.mp4
+          test -s demo/news-opener.mp4
+      - name: Commit opener
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "sun-news-editor"
+          git config user.email "sun-news-editor@users.noreply.github.com"
+          git add demo/news-opener.mp4
+          git commit -m "Add official-news opener excerpt"
+          git push origin HEAD:main
