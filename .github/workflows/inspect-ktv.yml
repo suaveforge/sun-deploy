@@ -32,3 +32,18 @@ jobs:
             echo "### $u"
             curl -L --compressed -A 'Mozilla/5.0' -sS "$u" | grep -Ein 'fileId|HLS|m3u8|smil|media|url|source|VOD' | head -120 || true
           done
+
+      - name: Inspect core player scripts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for rel in \
+            '/resources/js/library/vodplayer/extend/js/init.js' \
+            '/resources/js/library/vodplayer/wenplayer.js' \
+            '/resources/js/library/vodplayer/player/wenplayer_5.js'
+          do
+            echo "### $rel"
+            curl -L --compressed -A 'Mozilla/5.0' -sS "https://www.ktv.go.kr$rel" |
+              grep -Ein 'mediaHost|ajaxMediaHost|fileId|m3u8|smil|stream|source|playurl|GetFile|fileinfo|vod' |
+              head -220 || true
+          done
