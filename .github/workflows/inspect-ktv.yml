@@ -47,3 +47,14 @@ jobs:
               grep -Ein 'mediaHost|ajaxMediaHost|fileId|m3u8|smil|stream|source|playurl|GetFile|fileinfo|vod' |
               head -220 || true
           done
+
+      - name: Resolve KTV file metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for scheme in http https; do
+            url="$scheme://hdvod.ktv.go.kr:8080/rest/file/view/36948bc0-0478-403b-b003-9b70a851123b"
+            echo "### $url"
+            curl -L --max-time 20 -A 'Mozilla/5.0' -sS "$url" || true
+            echo
+          done
