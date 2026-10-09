@@ -58,3 +58,11 @@ jobs:
             curl -L --max-time 20 -A 'Mozilla/5.0' -sS "$url" || true
             echo
           done
+
+      - name: Resolve KTV HTTP stream host
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl -L --max-time 20 -A 'Mozilla/5.0' -sS \
+            'http://hdvod.ktv.go.kr:8080/rest/stream/url/http/7df25851-29bb-48ce-b3ed-12d715903294'
+          echo
