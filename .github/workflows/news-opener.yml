@@ -15,18 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download official broadcaster clip
+      - name: Download official KTV broadcaster clip
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -m pip install -q yt-dlp
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg >/dev/null
-          rm -f /tmp/news.*
-          yt-dlp             -f "bv*[height<=720]+ba/b[height<=720]"             --merge-output-format mp4             -o "/tmp/news.%(ext)s"             "https://www.youtube.com/watch?v=BczpusdkhoI"
-          src="$(ls /tmp/news.* | head -1)"
-          test -s "$src"
           mkdir -p demo
+          src='https://hdvod.ktv.go.kr:8443/streams/_definst_/smil:7df25851-29bb-48ce-b3ed-12d715903294/2026/07/24/36948bc0-0478-403b-b003-9b70a851123b/36948bc0-0478-403b-b003-9b70a851123b.smil/playlist.m3u8'
+          ffprobe -v error -show_entries format=duration -of default=nw=1 "$src" | head || true
           ffmpeg -hide_banner -loglevel error -y             -ss 0 -t 8 -i "$src"             -vf "scale=720:-2"             -c:v libx264 -preset medium -crf 24             -c:a aac -b:a 128k             -movflags +faststart             demo/news-opener.mp4
           test -s demo/news-opener.mp4
       - name: Commit opener
@@ -36,5 +33,5 @@ jobs:
           git config user.name "sun-news-editor"
           git config user.email "sun-news-editor@users.noreply.github.com"
           git add demo/news-opener.mp4
-          git commit -m "Add official-news opener excerpt"
+          git commit -m "Add official KTV news opener excerpt"
           git push origin HEAD:main
