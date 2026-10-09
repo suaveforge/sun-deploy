@@ -26,7 +26,7 @@ jobs:
           set -Eeuo pipefail
           mkdir -p /tmp/sun-news-clips
           cat > /tmp/sun-ktv-fetch.py <<'PY'
-          import urllib.request, re, xml.etree.ElementTree as ET, subprocess, pathlib
+          import urllib.request, re, xml.etree.ElementTree as ET, subprocess, pathlib, time
           out=pathlib.Path('/tmp/sun-news-clips')
           cases=[
             ('01_2014_contact_only',495312,'KTV','좋은사람 있다더니…결혼중개 피해 속출','2014-11-17'),
@@ -35,7 +35,18 @@ jobs:
             ('04_2026_profile_only',758365,'KTV','결혼 중개 피해 매년 증가…프로필만 주고 만남 횟수 차감','2026-07-24'),
           ]
           def read(url):
-            return urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=25).read().decode('utf-8')
+            sources=[url]
+            if 'www.ktv.go.kr/' in url: sources += [url.replace('www.ktv.go.kr/','m.ktv.go.kr/')]
+            errors=[]
+            for attempt in range(7):
+              for candidate in sources:
+                try:
+                  req=urllib.request.Request(candidate,headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/xml;q=0.9,*/*;q=0.8'})
+                  return urllib.request.urlopen(req,timeout=12).read().decode('utf-8')
+                except Exception as e:
+                  errors.append(f'{candidate}: {repr(e)}')
+              time.sleep(2+attempt)
+            raise RuntimeError('KTV source unreachable: '+url+' | '+errors[-1])
           for filename,id,publisher,title,date in cases:
             player=read(f'https://www.ktv.go.kr/content/player?content_id={id}')
             file_id=re.search(r'fileId\s*:\s*"([^"]+)"',player)
