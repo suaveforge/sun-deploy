@@ -1,0 +1,22 @@
+name: Inspect KTV video source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.ktv-inspect-trigger'
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect page
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          url='https://www.ktv.go.kr/news/major/view?content_id=758365'
+          curl -L --compressed -A 'Mozilla/5.0' -sS "$url" -o /tmp/ktv.html
+          wc -c /tmp/ktv.html
+          grep -Eoi 'https?[^"<> ]+\.(m3u8|mp4)([^"<> ]*)?' /tmp/ktv.html | head -20 || true
+          grep -Ein 'm3u8|mp4|video|content_id|media' /tmp/ktv.html | head -80 || true
