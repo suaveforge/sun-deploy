@@ -21,3 +21,14 @@ jobs:
           grep -Eoi 'https?[^"<> ]+\.(m3u8|mp4)([^"<> ]*)?' /tmp/ktv.html | head -20 || true
           grep -Ein 'm3u8|mp4|video|content_id|media' /tmp/ktv.html | head -80 || true
           sed -n '35,95p' /tmp/ktv.html
+          echo '--- script sources ---'
+          grep -Eo 'src="[^"]+"' /tmp/ktv.html | sed 's/^src="//;s/"$//' | grep 'vodplayer' || true
+          echo '--- env.js ---'
+          curl -L --compressed -A 'Mozilla/5.0' -sS 'https://www.ktv.go.kr/resources/js/library/vodplayer/extend/js/env.js?v=clp' -o /tmp/env.js
+          cat /tmp/env.js
+          echo '--- player js refs ---'
+          for src in $(grep -Eo 'src="[^"]+"' /tmp/ktv.html | sed 's/^src="//;s/"$//' | grep 'vodplayer'); do
+            case "$src" in http*) u="$src";; *) u="https://www.ktv.go.kr$src";; esac
+            echo "### $u"
+            curl -L --compressed -A 'Mozilla/5.0' -sS "$u" | grep -Ein 'fileId|HLS|m3u8|smil|media|url|source|VOD' | head -120 || true
+          done
